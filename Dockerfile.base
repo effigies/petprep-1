@@ -43,12 +43,6 @@ RUN apt-get update && \
                     curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# PETPVC
-FROM downloader AS petpvc
-RUN mkdir /opt/petpvc \
-    && curl -fsSL https://github.com/UCL/PETPVC/releases/download/v1.2.10/PETPVC-1.2.10-Linux.tar.gz \
-    | tar -xz -C /opt/petpvc --strip-components=1  PETPVC-1.2.10/bin PETPVC-1.2.10/parc
-
 # MSM HOCR (Nov 19, 2019 release)
 FROM downloader AS msm
 RUN curl -L -H "Accept: application/octet-stream" https://api.github.com/repos/ecr05/MSM_HOCR/releases/assets/16253707 -o /usr/local/bin/msm \
@@ -65,11 +59,9 @@ ENV DEBIAN_FRONTEND="noninteractive" \
     LC_ALL="en_US.UTF-8"
 
 # FreeSurfer dependencies: bc, libgomp1, libglib, libglu tcsh
-# PETPVC dependencies: libinsighttoolkit5.2
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
                     bc \
-                    libinsighttoolkit5.2 \
                     libgfortran5 \
                     libgomp1 \
                     libglib2.0-0 \
@@ -84,8 +76,6 @@ RUN apt-get update && \
 COPY --from=freesurfer/freesurfer:7.4.1 /usr/local/freesurfer /opt/freesurfer
 
 COPY --link --from=msm /usr/local/bin/msm /usr/local/bin/msm
-COPY --link --from=petpvc /opt/petpvc/bin/* /usr/local/bin/
-COPY --link --from=petpvc /opt/petpvc/parc /usr/local/parc
 
 # Changing library paths requires a re-ldconfig
 RUN ldconfig
