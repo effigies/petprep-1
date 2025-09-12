@@ -58,6 +58,10 @@ ENV DEBIAN_FRONTEND="noninteractive" \
     LANG="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8"
 
+# Copy large software early so updating apt dependencies doesn't invalidate the layer
+COPY --from=freesurfer/freesurfer:7.4.1 /usr/local/freesurfer /opt/freesurfer
+COPY --link --from=msm /usr/local/bin/msm /usr/local/bin/msm
+
 # FreeSurfer dependencies: bc, libgomp1, libglib, libglu tcsh
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -72,10 +76,6 @@ RUN apt-get update && \
                     tcsh \
                     xvfb && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-COPY --from=freesurfer/freesurfer:7.4.1 /usr/local/freesurfer /opt/freesurfer
-
-COPY --link --from=msm /usr/local/bin/msm /usr/local/bin/msm
 
 # Changing library paths requires a re-ldconfig
 RUN ldconfig
