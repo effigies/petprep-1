@@ -52,6 +52,15 @@ RUN npm install -g svgo@^3.2.0 bids-validator@1.14.10 && \
     rm -r ~/.npm
 
 #
+# Pre-fetch templates
+#
+FROM ghcr.io/astral-sh/uv:python3.12-alpine AS templates
+ENV TEMPLATEFLOW_HOME="/templateflow"
+RUN uv pip install --system templateflow
+COPY scripts/fetch_templates.py fetch_templates.py
+RUN python fetch_templates.py
+
+#
 # Main stage
 #
 FROM ${BASE_IMAGE} AS petprep
@@ -60,6 +69,8 @@ FROM ${BASE_IMAGE} AS petprep
 RUN useradd -m -s /bin/bash -G users petprep
 WORKDIR /home/petprep
 
+COPY --link --from=templates /templateflow /home/petprep/.cache/templateflow
+
 COPY --from=micromamba /bin/micromamba /bin/micromamba
 COPY --from=micromamba /opt/conda/envs/petprep /opt/conda/envs/petprep
 
@@ -67,13 +78,6 @@ ENV MAMBA_ROOT_PREFIX="/opt/conda"
 RUN micromamba shell init -s bash && \
     echo "micromamba activate petprep" >> $HOME/.bashrc
 ENV PATH="/opt/conda/envs/petprep/bin:$PATH"
-
-# Precaching atlases
-COPY scripts/fetch_templates.py fetch_templates.py
-RUN python fetch_templates.py && \
-    rm fetch_templates.py && \
-    find $HOME/.cache/templateflow -type d -exec chmod go=u {} + && \
-    find $HOME/.cache/templateflow -type f -exec chmod go=u {} +
 
 # FSL environment
 ENV LANG="C.UTF-8" \
