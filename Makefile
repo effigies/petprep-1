@@ -2,6 +2,8 @@
 .DEFAULT: help
 
 tag="petprep"
+# e.g., ghcr.io/nipreps/petprep:latest
+BASE_IMAGE := $(shell grep BASE_IMAGE= Dockerfile | cut -d= -f2)
 
 help:
 	@echo "Premade recipes"
@@ -10,8 +12,11 @@ help:
 	@echo "\tBuilds a docker image from source. Defaults to 'petprep' tag."
 
 
-docker-build:
+docker-build: docker-base
 	docker build --rm -t $(tag) \
 	--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 	--build-arg VCS_REF=`git rev-parse --short HEAD` \
 	--build-arg VERSION=`hatch version` .
+
+docker-base:
+	docker pull $(BASE_IMAGE) || docker build -t $(BASE_IMAGE) -f Dockerfile.base .
